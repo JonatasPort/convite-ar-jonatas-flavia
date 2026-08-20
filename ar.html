@@ -164,6 +164,27 @@
 
   let started = false;
   let found = false;
+  let sceneReady = false;
+
+  const scene = document.querySelector('a-scene');
+
+  scene.addEventListener('loaded', () => {
+    sceneReady = true;
+  });
+
+  function cameraErrorMessage(e) {
+    const name = e && e.name ? e.name : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      return 'A câmera foi bloqueada pelo navegador. Libere a câmera para este site e tente novamente.';
+    }
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      return 'Nenhuma câmera foi encontrada neste dispositivo.';
+    }
+    if (name === 'NotReadableError' || name === 'TrackStartError') {
+      return 'A câmera está sendo usada por outro aplicativo.';
+    }
+    return 'Não foi possível abrir a câmera. Tente novamente.';
+  }
 
   function showStatus(text, ms=0) {
     status.textContent = text;
@@ -176,18 +197,31 @@
     started = true;
     intro.classList.add('hidden');
     scan.classList.add('active');
-    showStatus('Abrindo a câmera…');
+    showStatus('Preparando a câmera…');
 
     try {
-      const scene = document.querySelector('a-scene');
+      if (!sceneReady) {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('A cena AR demorou para carregar.')), 12000);
+          scene.addEventListener('loaded', () => {
+            clearTimeout(timeout);
+            resolve();
+          }, { once: true });
+        });
+      }
+
       const arSystem = scene.systems['mindar-image-system'];
-      if (!arSystem) throw new Error('MindAR ainda não está pronto.');
-      arSystem.start();
+      if (!arSystem) throw new Error('MindAR não foi inicializado.');
+
+      showStatus('Solicitando acesso à câmera…');
+      await arSystem.start();
       showStatus('Aponte para o convite');
     } catch (e) {
-      console.error(e);
-      showStatus('Não foi possível abrir a câmera. Verifique a permissão.', 5000);
+      console.error('AR start error:', e);
+      showStatus(cameraErrorMessage(e), 7000);
       scan.classList.remove('active');
+      intro.classList.remove('hidden');
+      started = false;
     }
   });
 
@@ -195,7 +229,7 @@
     found = true;
     scan.classList.remove('active');
     showStatus('✨ O convite ganhou vida!', 2500);
-    target.querySelectorAll('[animation]').forEach(el => {
+    target.querySelectorAll('[animation__grow], [animation__float], [animation__spark], [animation__fade]').forEach(el => {
       el.emit('ar-start');
     });
     actions.classList.add('show');
