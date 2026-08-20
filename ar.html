@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Jonatas & Flávia — Convite AR</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    :root { --gold:#b17b2a; --ink:#302d22; --paper:#f7f0df; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#111; font-family: Georgia, "Times New Roman", serif; }
+    #container { position:fixed; inset:0; width:100%; height:100%; z-index:1; }
+    #container video { object-fit:cover !important; }
+
+    .intro {
+      position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+      padding:24px; background:
+        radial-gradient(circle at 50% 25%, rgba(255,255,255,.92), rgba(247,240,223,.98) 65%),
+        var(--paper);
+      color:var(--ink); text-align:center; transition:opacity .55s ease, visibility .55s ease;
+    }
+    .intro.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+    .card {
+      width:min(430px, 92vw); padding:34px 25px 28px; border:1px solid rgba(177,123,42,.55);
+      border-radius:22px; box-shadow:0 20px 70px rgba(60,40,15,.12); position:relative;
+    }
+    .card:before { content:""; position:absolute; inset:9px; border:1px solid rgba(177,123,42,.25); border-radius:17px; pointer-events:none; }
+    .monogram { font-size:54px; line-height:1; color:#7e642f; letter-spacing:-8px; margin-left:-8px; }
+    h1 { margin:14px 0 6px; font-size:30px; font-weight:500; letter-spacing:1px; }
+    .subtitle { font-size:16px; font-style:italic; opacity:.8; margin-bottom:25px; }
+    .hint { font-size:15px; line-height:1.55; margin:0 auto 22px; max-width:330px; }
+    button {
+      border:0; border-radius:999px; padding:14px 24px; font:600 15px Georgia,serif; color:#fff;
+      background:linear-gradient(135deg,#8f6424,#c39a51); box-shadow:0 9px 24px rgba(120,80,20,.25);
+    }
+    button:active { transform:translateY(1px); }
+    .mini { margin-top:18px; font-size:12px; opacity:.58; }
+
+    .status {
+      position:fixed; left:50%; top:max(18px, env(safe-area-inset-top)); transform:translateX(-50%);
+      z-index:15; color:#fff; background:rgba(35,30,20,.68); backdrop-filter:blur(10px);
+      padding:9px 15px; border-radius:999px; font:13px system-ui,sans-serif; opacity:0; transition:.3s;
+      pointer-events:none; white-space:nowrap;
+    }
+    .status.show { opacity:1; }
+    .scan {
+      position:fixed; inset:0; z-index:10; pointer-events:none; display:none; align-items:center; justify-content:center;
+    }
+    .scan.active { display:flex; }
+    .scanbox { width:min(76vw,430px); aspect-ratio:2/3; border:1px solid rgba(255,255,255,.75); border-radius:20px; box-shadow:0 0 0 9999px rgba(0,0,0,.22); position:relative; }
+    .scanbox:before,.scanbox:after { content:""; position:absolute; width:42px; height:42px; border-color:#fff; border-style:solid; }
+    .scanbox:before { left:-1px; top:-1px; border-width:3px 0 0 3px; border-radius:20px 0 0 0; }
+    .scanbox:after { right:-1px; bottom:-1px; border-width:0 3px 3px 0; border-radius:0 0 20px 0; }
+    .scanlabel { position:absolute; bottom:-54px; left:50%; transform:translateX(-50%); color:#fff; font:14px system-ui,sans-serif; white-space:nowrap; text-shadow:0 2px 8px #000; }
+
+    .actions {
+      position:fixed; z-index:16; left:50%; bottom:max(20px, env(safe-area-inset-bottom)); transform:translateX(-50%);
+      display:flex; gap:10px; width:min(92vw,420px); justify-content:center; opacity:0; pointer-events:none; transition:.5s;
+    }
+    .actions.show { opacity:1; pointer-events:auto; }
+    .action {
+      flex:1; padding:12px 15px; border-radius:999px; text-decoration:none; text-align:center;
+      background:rgba(250,245,232,.94); color:#4d3b20; border:1px solid rgba(177,123,42,.4);
+      font:600 13px system-ui,sans-serif; box-shadow:0 8px 25px rgba(0,0,0,.18);
+    }
+    .sound {
+      position:fixed; z-index:16; right:16px; bottom:max(20px, env(safe-area-inset-bottom)); display:none;
+      border:1px solid rgba(255,255,255,.5); background:rgba(35,30,20,.55); color:#fff; padding:10px 14px;
+      border-radius:999px; font:13px system-ui,sans-serif; backdrop-filter:blur(8px);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+  <section class="intro" id="intro">
+    <div class="card">
+      <div class="monogram">J&nbsp;F</div>
+      <h1>Jonatas &amp; Flávia</h1>
+      <div class="subtitle">O amor encontrou o caminho</div>
+      <p class="hint">Aponte a câmera para o convite e veja a nossa história ganhar vida.</p>
+      <button id="start">Abrir experiência</button>
+      <div class="mini">21 de novembro de 2026 · 16h00</div>
+    </div>
+  </section>
+
+  <div class="status" id="status">Preparando a experiência…</div>
+
+  <div class="scan" id="scan">
+    <div class="scanbox"><div class="scanlabel">Enquadre todo o convite</div></div>
+  </div>
+
+  <button class="sound" id="sound">🔊 Ativar som</button>
+
+  <div class="actions" id="actions">
+    <a class="action" href="https://noivos.casar.com/jonatas-e-flavia#/one-page/_start" target="_blank" rel="noopener">Confirmar presença</a>
+    <a class="action" href="https://maps.app.goo.gl/" target="_blank" rel="noopener">Ver localização</a>
+  </div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: ./assets/targets.mind; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 10; uiScanning: no; uiLoading: no; uiError: no"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    embedded>
+    <a-assets>
+      <a-asset-item id="margarida" src="./assets/margarida_convite_8k.glb"></a-asset-item>
+      <a-asset-item id="ramoD" src="./assets/ramo_direito_convite_15k.glb"></a-asset-item>
+      <a-asset-item id="ramoE" src="./assets/ramo_esquerdo_convite_15k.glb"></a-asset-item>
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+
+    <a-entity id="target" mindar-image-target="targetIndex: 0">
+
+      <!-- Ramos: nascem da parte inferior e crescem para cima -->
+      <a-gltf-model id="ramoE" src="#ramoE" position="-0.43 -0.48 0.08" rotation="0 0 -7"
+        scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.36 0.36 0.36; dur:1400; delay:250; easing:easeOutCubic; startEvents:ar-start"
+        animation__float="property:rotation; from:0 0 -7; to:0 0 -3; dur:1800; delay:250; easing:easeInOutSine; startEvents:ar-start"></a-gltf-model>
+
+      <a-gltf-model id="ramoD" src="#ramoD" position="0.43 -0.48 0.08" rotation="0 0 7"
+        scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.36 0.36 0.36; dur:1400; delay:500; easing:easeOutCubic; startEvents:ar-start"
+        animation__float="property:rotation; from:0 0 7; to:0 0 3; dur:1800; delay:500; easing:easeInOutSine; startEvents:ar-start"></a-gltf-model>
+
+      <!-- Margaridas aparecem em sequência -->
+      <a-gltf-model src="#margarida" position="-0.48 -0.40 0.14" rotation="0 0 -8" scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.18 0.18 0.18; dur:850; delay:1050; easing:easeOutCubic; startEvents:ar-start"></a-gltf-model>
+
+      <a-gltf-model src="#margarida" position="-0.20 -0.47 0.16" rotation="0 0 6" scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.14 0.14 0.14; dur:800; delay:1250; easing:easeOutCubic; startEvents:ar-start"></a-gltf-model>
+
+      <a-gltf-model src="#margarida" position="0.22 -0.46 0.16" rotation="0 0 -5" scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.15 0.15 0.15; dur:800; delay:1450; easing:easeOutCubic; startEvents:ar-start"></a-gltf-model>
+
+      <a-gltf-model src="#margarida" position="0.48 -0.39 0.14" rotation="0 0 8" scale="0.001 0.001 0.001"
+        animation__grow="property:scale; from:0.001 0.001 0.001; to:0.18 0.18 0.18; dur:850; delay:1650; easing:easeOutCubic; startEvents:ar-start"></a-gltf-model>
+
+      <!-- Pequeno brilho central -->
+      <a-entity position="0 0.08 0.22" geometry="primitive: ring; radiusInner:0.008; radiusOuter:0.018; segmentsTheta:24"
+        material="color:#f0d58a; shader:flat; opacity:0; transparent:true"
+        animation__spark="property:scale; from:0.1 0.1 0.1; to:3 3 3; dur:1500; delay:2100; easing:easeOutCubic; startEvents:ar-start"
+        animation__fade="property:material.opacity; from:0; to:0.65; dur:500; delay:2100; dir:alternate; loop:2; easing:easeInOutSine; startEvents:ar-start"></a-entity>
+
+    </a-entity>
+  </a-scene>
+
+<script>
+(() => {
+  const intro = document.getElementById('intro');
+  const start = document.getElementById('start');
+  const status = document.getElementById('status');
+  const scan = document.getElementById('scan');
+  const target = document.getElementById('target');
+  const actions = document.getElementById('actions');
+  const sound = document.getElementById('sound');
+
+  let started = false;
+  let found = false;
+
+  function showStatus(text, ms=0) {
+    status.textContent = text;
+    status.classList.add('show');
+    if (ms) setTimeout(() => status.classList.remove('show'), ms);
+  }
+
+  start.addEventListener('click', async () => {
+    if (started) return;
+    started = true;
+    intro.classList.add('hidden');
+    scan.classList.add('active');
+    showStatus('Abrindo a câmera…');
+
+    try {
+      const scene = document.querySelector('a-scene');
+      const arSystem = scene.systems['mindar-image-system'];
+      if (!arSystem) throw new Error('MindAR ainda não está pronto.');
+      arSystem.start();
+      showStatus('Aponte para o convite');
+    } catch (e) {
+      console.error(e);
+      showStatus('Não foi possível abrir a câmera. Verifique a permissão.', 5000);
+      scan.classList.remove('active');
+    }
+  });
+
+  target.addEventListener('targetFound', () => {
+    found = true;
+    scan.classList.remove('active');
+    showStatus('✨ O convite ganhou vida!', 2500);
+    target.querySelectorAll('[animation]').forEach(el => {
+      el.emit('ar-start');
+    });
+    actions.classList.add('show');
+    sound.style.display = 'block';
+  });
+
+  target.addEventListener('targetLost', () => {
+    found = false;
+    actions.classList.remove('show');
+    sound.style.display = 'none';
+    if (started) {
+      scan.classList.add('active');
+      showStatus('Aponte novamente para o convite', 2500);
+    }
+  });
+
+  sound.addEventListener('click', () => {
+    // Sem trilha por enquanto: o botão fica pronto para receber a música do casal.
+    sound.textContent = '♪ Som ativado';
+    setTimeout(() => sound.textContent = '🔊 Som', 1800);
+  });
+})();
+</script>
+</body>
+</html>

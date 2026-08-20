@@ -1,0 +1,48 @@
+CONVITE AR — JONATAS & FLÁVIA — V11
+=====================================
+
+Esta pasta contém a nova experiência WebAR baseada no mesmo conceito da versão anterior.
+
+Arquivos principais:
+- ar.html
+- assets/convite-target.png
+- assets/margarida_convite_8k.glb
+- assets/ramo_direito_convite_15k.glb
+- assets/ramo_esquerdo_convite_15k.glb
+
+FALTA APENAS O ARQUIVO targets.mind
+------------------------------------
+O MindAR precisa pré-processar a imagem-alvo antes de reconhecer o convite.
+Use a imagem:
+assets/convite-target.png
+
+No compilador oficial do MindAR:
+https://hiukim.github.io/mind-ar-js-doc/tools/compile/
+
+1. Abra o compilador.
+2. Envie convite-target.png.
+3. Clique em Start.
+4. Baixe o arquivo targets.mind.
+5. Coloque targets.mind dentro de assets/.
+6. Publique a pasta mantendo a estrutura.
+
+Depois, abra:
+ar.html
+
+A experiência foi preparada para:
+- câmera traseira;
+- reconhecimento do convite inteiro;
+- ramos crescendo a partir da parte inferior;
+- quatro margaridas surgindo em sequência;
+- pequeno efeito de brilho;
+- botões de confirmação e localização.
+
+IMPORTANTE
+----------
+A página precisa ser hospedada em HTTPS para a câmera funcionar corretamente no celular.
+Não abra ar.html diretamente como arquivo local no celular.
+
+O link de localização no pacote está como placeholder (maps.app.goo.gl/).
+Substitua pelo link exato da Estância Santa Bárbara quando quiser.
+
+O botão de som também está preparado para receber a música do casal; os GLBs enviados não possuem animações internas.

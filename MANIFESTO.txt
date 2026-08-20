@@ -1,0 +1,12 @@
+CONVITE AR V11 — ARQUIVOS
+
+ar.html
+assets/convite-target.png
+assets/margarida_convite_8k.glb
+assets/ramo_direito_convite_15k.glb
+assets/ramo_esquerdo_convite_15k.glb
+
+ADICIONAR:
+assets/targets.mind
+
+Depois de adicionar targets.mind, publique a pasta inteira em HTTPS.
