@@ -164,13 +164,18 @@
 
   let started = false;
   let found = false;
-  let sceneReady = false;
-
   const scene = document.querySelector('a-scene');
 
-  scene.addEventListener('loaded', () => {
-    sceneReady = true;
-  });
+  function waitForSceneReady() {
+    if (scene.hasLoaded) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('A cena AR demorou para carregar.')), 15000);
+      scene.addEventListener('loaded', () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+    });
+  }
 
   function cameraErrorMessage(e) {
     const name = e && e.name ? e.name : '';
@@ -200,21 +205,14 @@
     showStatus('Preparando a câmera…');
 
     try {
-      if (!sceneReady) {
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('A cena AR demorou para carregar.')), 12000);
-          scene.addEventListener('loaded', () => {
-            clearTimeout(timeout);
-            resolve();
-          }, { once: true });
-        });
-      }
+      await waitForSceneReady();
 
       const arSystem = scene.systems['mindar-image-system'];
       if (!arSystem) throw new Error('MindAR não foi inicializado.');
 
       showStatus('Solicitando acesso à câmera…');
-      await arSystem.start();
+      const result = arSystem.start();
+      if (result && typeof result.then === 'function') await result;
       showStatus('Aponte para o convite');
     } catch (e) {
       console.error('AR start error:', e);
